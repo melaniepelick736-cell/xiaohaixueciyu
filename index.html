@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>儿童识字小报生成器</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: linear-gradient(135deg, #fff5e6 0%, #ffe4cc 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #ff6b35;
+      text-shadow: 2px 2px 0 #fff, 3px 3px 0 #ffd700;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(255, 107, 53, 0.15);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #ffd700;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s;
+      background: #fff;
+    }
+
+    input[type="text"]:focus,
+    select:focus {
+      outline: none;
+      border-color: #ff6b35;
+      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px 32px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: white;
+      background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 107, 53, 0.5);
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .result-card {
+      display: none;
+    }
+
+    .result-card.show {
+      display: block;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #ffd700;
+      border-top-color: #ff6b35;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #666;
+      font-size: 1.1rem;
+    }
+
+    .result-image {
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .save-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #ff6b35;
+      background: white;
+      border: 2px solid #ff6b35;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .save-btn:hover {
+      background: #ff6b35;
+      color: white;
+    }
+
+    .error {
+      background: #ffe5e5;
+      color: #d32f2f;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .api-key-hint {
+      font-size: 0.85rem;
+      color: #888;
+      margin-top: 6px;
+    }
+
+    .scene-preview {
+      background: #fff9e6;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .scene-preview strong {
+      color: #ff6b35;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📚 儿童识字小报生成器</h1>
+      <p class="subtitle">AI 智能生成，专为 5-9 岁儿童设计的识字小报</p>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="apiKey">🔑 API Key</label>
+        <input type="text" id="apiKey" placeholder="请输入您的 Nano Banana Pro API Key">
+        <p class="api-key-hint">获取 API Key: 访问 <a href="https://kie.ai/api-key" target="_blank">kie.ai/api-key</a></p>
+      </div>
+
+      <div class="form-group">
+        <label for="scene">🏠 选择场景</label>
+        <select id="scene">
+          <option value="">-- 请选择场景 --</option>
+          <option value="超市">超市</option>
+          <option value="医院">医院</option>
+          <option value="公园">公园</option>
+          <option value="学校">学校</option>
+          <option value="餐厅">餐厅</option>
+          <option value="家">家</option>
+          <option value="图书馆">图书馆</option>
+          <option value="动物园">动物园</option>
+          <option value="消防站">消防站</option>
+          <option value="警察局">警察局</option>
+        </select>
+        <div id="scenePreview" class="scene-preview" style="display: none;"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="title">📝 小报标题</label>
+        <input type="text" id="title" placeholder="例如：走进超市、快乐医院行">
+      </div>
+
+      <button id="generateBtn" class="btn" onclick="generatePoster()">
+        🚀 生成识字小报
+      </button>
+    </div>
+
+    <div id="resultCard" class="card result-card">
+      <div id="loadingArea" class="loading">
+        <div class="spinner"></div>
+        <p class="loading-text">正在生成识字小报，请稍候...</p>
+        <p id="statusText" style="color: #888; margin-top: 10px; font-size: 0.9rem;"></p>
+      </div>
+
+      <div id="errorArea" class="error" style="display: none;"></div>
+
+      <div id="imageArea" style="display: none;">
+        <div id="imageContainer">
+          <img id="resultImage" class="result-image" alt="生成的识字小报" onerror="handleImageError()">
+        </div>
+        <button id="saveBtn" class="save-btn" onclick="saveImage()">
+          🖼️ 在新标签页打开图片（右键另存为）
+        </button>
+        <p style="text-align: center; color: #888; font-size: 0.85rem; margin-top: 8px;">
+          如果图片无法显示，请点击上方按钮在新标签页查看并保存
+        </p>
+      </div>
+    </div>
+
+    <footer>
+      <p>Powered by Nano Banana Pro API</p>
+    </footer>
+  </div>
+
+  <script>
+    // 全局变量存储当前图片URL
+    let currentImageUrl = '';
+
+    // 场景词汇库
+    const sceneVocabulary = {
+      "超市": {
+        core: "shōu yín yuán 收银员, huò jià 货架, gōu wù chē 购物车, shōu yín tái 收银台",
+        items: "píng guǒ 苹果, niú nǎi 牛奶, miàn bāo 面包, shuǐ guǒ 水果, jī dàn 鸡蛋, bǐng gān 饼干, kuàng quán shuǐ 矿泉水",
+        environment: "chū kǒu 出口, jìn kǒu 入口, dēng 灯, qiáng 墙, biāo jià 标价牌, tuī chē 推车"
+      },
+      "医院": {
+        core: "yī shēng 医生, hù shi 护士, bìng chuáng 病床, tī wēn qì 体温计",
+        items: "yào 药, kǒu zhào 口罩, tǐ wēn jì 体温计, zhěn duàn 诊断, bēi zi 杯子",
+        environment: "mén zhèn 门诊, jiù hù chē 救护车, dēng 灯, yī yuàn 医院, zuò yi 座椅"
+      },
+      "公园": {
+        core: "cháng lǐ cháng凳, huā tán 花坛, pēn quán 喷泉, lù dào 绿道",
+        items: "qiū qiān 秋千, huá tī 滑梯, lǜ zhí 绿植, huā 花, yǐ zi 椅子",
+        environment: "lù dēng 路灯, chǎng dì 场地, shù 树, cǎo dì 草地, hú 湖"
+      },
+      "学校": {
+        core: "lǎo shī 老师, xué sheng 学生, jiào shì 教室, hēi bǎn 黑板",
+        items: "shū 包, qiān bǐ 铅笔, bǐ 笔, tú shū 图书, kè běn 课本",
+        environment: "cāo chǎng 操场, yóu yì chǎng 游乐场, lóu tī 楼梯, zǒu láng 走廊, guó qí 国旗"
+      },
+      "餐厅": {
+        core: "chú shī 厨师, fú wù yuán 服务员, cān zhuō 餐桌, cān yǐ 餐椅",
+        items: "fàn 米饭, miàn 条, jiǎo zi 饺子, tāng 汤, shuǐ 水",
+        environment: "mén kǒu 门口, dēng 灯, qiáng 墙, zhǎo pái 招牌, cān dān 菜单"
+      },
+      "家": {
+        core: "bà ba 爸爸, mā ma 妈妈, kè tīng 客厅, wò shì 卧室",
+        items: "chú guì 橱柜, diàn shì 电视, shā fā 沙发, chuáng 床, zhuō zi 桌子",
+        environment: "mén 门, chuāng 窗, dēng 灯, dì tǎn 地毯, huā 盆花"
+      },
+      "图书馆": {
+        core: "guǎn lǐ yuán 管理员, dú zhě 读者, shū jià 书架, yuè dú qū 阅读区",
+        items: "shū 书, zá zhì 杂志, bào zhǐ 报纸, diàn nǎo 电脑, zhuō zi 桌子",
+        environment: "dēng 灯, zuò yi 座椅, dà mén 大门, chuāng 窗, zǒu láng 走廊"
+      },
+      "动物园": {
+        core: "xióng māo 熊猫, shī zi 狮子, hóu zi 猴子, dà xiàng 大象",
+        items: "hú li 狐狸, lǎo hǔ 老虎, cháng jǐng lù 长颈鹿, bān mǎ 斑马, kǒng què 孔雀",
+        environment: "lóu 楼, chē 缆车, dēng 灯, lù  路, huā 园"
+      },
+      "消防站": {
+        core: "xiāo fáng yuán 消防员, xiāo fáng chē 消防车, jiù hù tī 救火梯, huán jìng 消防栓",
+        items: "fáng fēng yī 防护服, tóu kuī 头盔, jiù shēng shéng 救生绳, miè huǒ qì 灭火器",
+        environment: "mén 门, dēng 灯, qiáng 墙, chē kù 车库, zǒng dū 总队"
+      },
+      "警察局": {
+        core: "jǐng chá 警察, jǐng chē 警车, bàn gōng shì 办公室, jǐng wēi 警徽",
+        items: "duì jiǎo 胸牌, shǒu kù 手铐, duì jiǎng jī 对讲机, zhì fú 制服",
+        environment: "mén kǒu 门口, dēng 灯, qiáng 墙, dàmén 大门, jǐng gǎng 岗亭"
+      }
+    };
+
+    // 场景选择变化时显示预览
+    document.getElementById('scene').addEventListener('change', function() {
+      const scene = this.value;
+      const preview = document.getElementById('scenePreview');
+
+      if (scene && sceneVocabulary[scene]) {
+        const vocab = sceneVocabulary[scene];
+        preview.innerHTML = `
+          <strong>本场景词汇：</strong><br>
+          核心：${vocab.core}<br>
+          物品：${vocab.items}<br>
+          环境：${vocab.environment}
+        `;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+
+    // 生成提示词
+    function generatePrompt(scene, title) {
+      const vocab = sceneVocabulary[scene];
+      if (!vocab) return '';
+
+      return `请生成一张儿童识字小报《${title}》，竖版 A4，学习小报版式，适合 5–9 岁孩子 认字与看图识物。
+
+# 一、小报标题区（顶部）
+
+**顶部居中大标题**：《${title}》
+* **风格**：十字小报 / 儿童学习报感
+* **文本要求**：大字、醒目、卡通手写体、彩色描边
+* **装饰**：周围添加与 ${scene} 相关的贴纸风装饰，颜色鲜艳
+
+# 二、小报主体（中间主画面）
+
+画面中心是一幅 **卡通插画风的「${scene}」场景**：
+* **整体气氛**：明亮、温暖、积极
+* **构图**：物体边界清晰，方便对应文字，不要过于拥挤。
+
+**场景分区与核心内容**
+1.  **核心区域 A（主要对象）**：表现 ${scene} 的核心活动。
+2.  **核心区域 B（配套设施）**：展示相关的工具或物品。
+3.  **核心区域 C（环境背景）**：体现环境特征（如墙面、指示牌等）。
+
+**主题人物**
+* **角色**：1 位可爱卡通人物（职业/身份：与 ${scene} 匹配）。
+* **动作**：正在进行与场景相关的自然互动。
+
+# 三、必画物体与识字清单（Generated Content）
+
+**请务必在画面中清晰绘制以下物体，并为其预留贴标签的位置：**
+
+**1. 核心角色与设施：**
+${vocab.core}
+
+**2. 常见物品/工具：**
+${vocab.items}
+
+**3. 环境与装饰：**
+${vocab.environment}
+
+*(注意：画面中的物体数量不限于此，但以上列表必须作为重点描绘对象)*
+
+# 四、识字标注规则
+
+对上述清单中的物体，贴上中文识字标签：
+* **格式**：两行制（第一行拼音带声调，第二行简体汉字）。
+* **样式**：彩色小贴纸风格，白底黑字或深色字，清晰可读。
+* **排版**：标签靠近对应的物体，不遮挡主体。
+
+# 五、画风参数
+* **风格**：儿童绘本风 + 识字小报风
+* **色彩**：高饱和、明快、温暖 (High Saturation, Warm Tone)
+* **质量**：8k resolution, high detail, vector illustration style, clean lines.`;
+    }
+
+    // 生成小报
+    async function generatePoster() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const scene = document.getElementById('scene').value;
+      const title = document.getElementById('title').value.trim();
+
+      // 验证输入
+      if (!apiKey) {
+        alert('请输入 API Key');
+        return;
+      }
+      if (!scene) {
+        alert('请选择场景');
+        return;
+      }
+      if (!title) {
+        alert('请输入小报标题');
+        return;
+      }
+
+      // 生成提示词
+      const prompt = generatePrompt(scene, title);
+      if (!prompt) {
+        alert('该场景暂不支持');
+        return;
+      }
+
+      // 显示加载状态
+      const resultCard = document.getElementById('resultCard');
+      const loadingArea = document.getElementById('loadingArea');
+      const errorArea = document.getElementById('errorArea');
+      const imageArea = document.getElementById('imageArea');
+      const statusText = document.getElementById('statusText');
+
+      resultCard.classList.add('show');
+      loadingArea.style.display = 'block';
+      errorArea.style.display = 'none';
+      imageArea.style.display = 'none';
+
+      const generateBtn = document.getElementById('generateBtn');
+      generateBtn.disabled = true;
+      generateBtn.textContent = '生成中...';
+
+      try {
+        // 1. 创建任务
+        const createResponse = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'nano-banana-pro',
+            input: {
+              prompt: prompt,
+              aspect_ratio: '3:4',
+              resolution: '2K',
+              output_format: 'png'
+            }
+          })
+        });
+
+        const createData = await createResponse.json();
+
+        if (createData.code !== 200) {
+          throw new Error(createData.msg || '创建任务失败');
+        }
+
+        const taskId = createData.data.taskId;
+        statusText.textContent = '任务已创建，正在生成图像...';
+
+        // 2. 轮询任务状态
+        let state = 'waiting';
+        while (state === 'waiting' || state === 'processing') {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+
+          const statusResponse = await fetch(
+            `https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${apiKey}`
+              }
+            }
+          );
+
+          const statusData = await statusResponse.json();
+          state = statusData.data.state;
+
+          if (state === 'waiting') {
+            statusText.textContent = '等待中...';
+          } else if (state === 'processing') {
+            statusText.textContent = '正在生成图像...';
+          } else if (state === 'fail') {
+            throw new Error(statusData.data.failMsg || '生成失败');
+          }
+        }
+
+        // 3. 获取结果
+        const finalResponse = await fetch(
+          `https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`
+            }
+          }
+        );
+
+        const finalData = await finalResponse.json();
+        const resultJson = JSON.parse(finalData.data.resultJson);
+        const imageUrl = resultJson.resultUrls[0];
+        currentImageUrl = imageUrl;
+
+        // 显示结果
+        loadingArea.style.display = 'none';
+        imageArea.style.display = 'block';
+        document.getElementById('resultImage').src = imageUrl;
+        document.getElementById('resultImage').alt = '生成的识字小报';
+
+      } catch (error) {
+        loadingArea.style.display = 'none';
+        errorArea.style.display = 'block';
+        errorArea.textContent = '错误：' + error.message;
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.textContent = '🚀 生成识字小报';
+      }
+    }
+
+    // 保存图片
+    function saveImage() {
+      const imageUrl = currentImageUrl || document.getElementById('resultImage').src;
+      if (!imageUrl) {
+        alert('没有可保存的图片');
+        return;
+      }
+      // 在新标签页打开图片，用户可以右键保存
+      window.open(imageUrl, '_blank');
+    }
+
+    // 图片加载失败处理
+    function handleImageError() {
+      const img = document.getElementById('resultImage');
+      img.alt = '图片加载失败，请点击下方按钮在新标签页打开并保存';
+    }
+  </script>
+</body>
+</html>
